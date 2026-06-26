@@ -1,0 +1,7 @@
+# Core evaluation engine + local FastAPI web app.
+# The local stdio MCP server additionally requires `mcp` (see docs/MCP.md).
+numpy>=1.23
+python-docx>=1.1
+fastapi
+uvicorn
+python-multipart

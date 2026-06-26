@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "longbook-proof-local": {
+      "command": "python",
+      "args": ["EDIT_THIS_PATH/product_mvp/mcp_longbook_server.py"]
+    }
+  }
+}

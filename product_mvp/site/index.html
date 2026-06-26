@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LongBook Verifier</title>
+  <style>
+    :root {
+      --bg: #0b1016;
+      --panel: #121b25;
+      --line: rgba(255,255,255,.12);
+      --text: #eef5fb;
+      --muted: #aab8c8;
+      --accent: #8fd4ff;
+      --good: #a7f3c7;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, Segoe UI, Arial, sans-serif;
+      color: var(--text);
+      background: linear-gradient(180deg, #0b1016, #0d141b);
+    }
+
+    main {
+      width: min(960px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 48px 0;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(34px, 6vw, 58px);
+      line-height: 1;
+    }
+
+    .subtitle {
+      margin: 0 0 28px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.24);
+    }
+
+    form {
+      display: grid;
+      gap: 16px;
+    }
+
+    label {
+      display: grid;
+      gap: 8px;
+      color: #dbe8f4;
+      font-weight: 700;
+    }
+
+    input[type="file"] {
+      width: 100%;
+      border: 1px dashed var(--line);
+      border-radius: 12px;
+      padding: 14px;
+      color: var(--muted);
+      background: #0d141c;
+    }
+
+    button {
+      justify-self: start;
+      border: 0;
+      border-radius: 999px;
+      padding: 12px 18px;
+      color: #071019;
+      background: var(--accent);
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: .58;
+      cursor: wait;
+    }
+
+    .results {
+      display: none;
+      margin-top: 18px;
+      gap: 14px;
+    }
+
+    .score-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 12px;
+    }
+
+    .score {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px;
+      background: #0e1620;
+    }
+
+    .score span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .score strong {
+      display: block;
+      margin-top: 4px;
+      color: var(--good);
+      font-size: 22px;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 16px;
+      background: #071019;
+      color: #dfeaf4;
+      max-height: 520px;
+      overflow: auto;
+    }
+
+    .error {
+      display: none;
+      margin-top: 16px;
+      color: #ffd1d1;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>LongBook Verifier</h1>
+    <p class="subtitle">Check whether an AI answer is grounded in your book.</p>
+
+    <section class="panel">
+      <form id="verifyForm">
+        <label>
+          Upload book/manuscript
+          <input name="book_file" type="file" accept=".txt,.md,.docx" required />
+        </label>
+        <label>
+          Upload AI output/synopsis
+          <input name="ai_output_file" type="file" accept=".txt,.md" required />
+        </label>
+        <label>
+          Optional questions JSONL
+          <input name="questions_file" type="file" accept=".jsonl" />
+        </label>
+        <button id="verifyButton" type="submit">Verify</button>
+      </form>
+      <div id="error" class="error"></div>
+    </section>
+
+    <section id="results" class="results">
+      <div class="panel">
+        <div class="score-grid">
+          <div class="score">
+            <span>Evidence coverage</span>
+            <strong id="evidenceScore">-</strong>
+          </div>
+          <div class="score">
+            <span>Answer-term coverage</span>
+            <strong id="answerScore">-</strong>
+          </div>
+          <div class="score">
+            <span>QIDs found</span>
+            <strong id="qidScore">-</strong>
+          </div>
+          <div class="score">
+            <span>Answers found</span>
+            <strong id="answersScore">-</strong>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>Report</h2>
+        <pre id="reportText"></pre>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const form = document.getElementById("verifyForm");
+    const button = document.getElementById("verifyButton");
+    const results = document.getElementById("results");
+    const error = document.getElementById("error");
+
+    function scoreText(value) {
+      if (value === null || value === undefined) return "-";
+      if (typeof value === "number") return value.toFixed(4);
+      return String(value);
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      button.disabled = true;
+      error.style.display = "none";
+      results.style.display = "none";
+
+      try {
+        const response = await fetch("/api/verify", {
+          method: "POST",
+          body: new FormData(form)
+        });
+        if (!response.ok) {
+          const detail = await response.json().catch(() => ({}));
+          throw new Error(detail.detail || `Request failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+        document.getElementById("evidenceScore").textContent = scoreText(data.evidence_coverage);
+        document.getElementById("answerScore").textContent = scoreText(data.answer_term_coverage);
+        document.getElementById("qidScore").textContent = scoreText(data.qids_found);
+        document.getElementById("answersScore").textContent = scoreText(data.answers_found);
+
+        const report = await fetch(`/api/report/${encodeURIComponent(data.run_id)}`);
+        document.getElementById("reportText").textContent = await report.text();
+        results.style.display = "grid";
+      } catch (err) {
+        error.textContent = err.message;
+        error.style.display = "block";
+      } finally {
+        button.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

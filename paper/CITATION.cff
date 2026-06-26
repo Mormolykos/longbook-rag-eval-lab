@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use this artifact, please cite it using the metadata below."
+title: "Diagnosing Hierarchical Retrieval Failure in Long-Document RAG: A LongBook Verifier Ablation Study"
+authors:
+  - family-names: "Gkilis"
+    given-names: "Panagiotis"
+date-released: "2026-06-14"
+version: "1.0.0"
+license: "CC-BY-4.0"
+keywords:
+  - "long-document RAG"
+  - "hierarchical retrieval"
+  - "ablation study"
+  - "long-book evaluation"
+  - "evidence grounding"
+repository-code: "https://doi.org/10.5281/zenodo.20513116"
+abstract: "Experiment C diagnoses why hierarchical book RAG underperformed chapter-summary chain in the LongBook Verifier 5-book narrative benchmark. The ablation shows that oracle chapter routing raised recall to 0.7844, while disabling neighbor expansion raised hierarchical recall from 0.3365 to 0.4771, matching chapter-summary chain."
